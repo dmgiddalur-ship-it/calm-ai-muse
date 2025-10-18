@@ -20,16 +20,41 @@ serve(async (req) => {
 
     console.log("Generating insights for mood:", mood, "with tags:", moodTags);
 
+    // Mood-specific calming activity suggestions
+    const moodActivities: Record<string, string> = {
+      "Happy": "celebrate and amplify this positive energy",
+      "Calm": "maintain this peaceful state through mindfulness",
+      "Excited": "channel this vibrant energy productively",
+      "Sad": "gently process these feelings with self-compassion",
+      "Anxious": "ground yourself and find inner peace",
+      "Tired": "restore your energy and practice self-care"
+    };
+
+    const activityFocus = moodActivities[mood] || "support your emotional wellbeing";
+
     const moodPrompt = `User's current mood: ${mood}
 ${note ? `User's note: ${note}` : ''}
 ${moodTags && moodTags.length > 0 ? `Mood tags: ${moodTags.join(', ')}` : ''}
 
-Generate a personalized, empathetic response with:
-1. A warm, understanding message about their mood (2-3 sentences)
-2. One specific calming activity suggestion based on their emotional state
-3. Three song recommendations that match their mood, formatted as: "Song Name by Artist"
+Generate a personalized, empathetic response in this EXACT format:
 
-Keep the tone gentle, supportive, and non-judgmental.`;
+MESSAGE:
+[Write 2-3 warm, understanding sentences about their ${mood} mood. Be empathetic and validating.]
+
+ACTIVITIES:
+[Provide 3-4 specific, actionable calming activities to help them ${activityFocus}. Each activity should:
+- Be practical and take 5-15 minutes
+- Include clear step-by-step instructions
+- Match their current emotional state
+Format each as a numbered list with the activity name in bold followed by instructions.]
+
+SONGS:
+[List exactly 3 song recommendations that match their ${mood} mood]
+- Song 1: "Song Name" by Artist Name
+- Song 2: "Song Name" by Artist Name  
+- Song 3: "Song Name" by Artist Name
+
+Keep the tone gentle, supportive, and non-judgmental. Make activities specific and actionable, not generic advice.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

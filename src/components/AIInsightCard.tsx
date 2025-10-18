@@ -7,37 +7,41 @@ interface AIInsightCardProps {
 }
 
 const AIInsightCard = ({ insight, mood }: AIInsightCardProps) => {
-  // Parse the AI response to extract different sections
+  // Parse the AI response to extract structured sections
   const parseInsight = (text: string) => {
-    const lines = text.split('\n').filter(line => line.trim());
-    
-    // Find sections
-    const messageLines: string[] = [];
-    const activityLines: string[] = [];
-    const songLines: string[] = [];
-    
-    let currentSection = 'message';
-    
-    lines.forEach(line => {
-      const lowerLine = line.toLowerCase();
-      if (lowerLine.includes('activity') || lowerLine.includes('suggestion')) {
-        currentSection = 'activity';
-      } else if (lowerLine.includes('song') || lowerLine.includes('music')) {
-        currentSection = 'songs';
-      } else if (currentSection === 'message') {
-        messageLines.push(line);
-      } else if (currentSection === 'activity') {
-        activityLines.push(line);
-      } else if (currentSection === 'songs') {
-        songLines.push(line);
-      }
-    });
-
-    return {
-      message: messageLines.join(' '),
-      activity: activityLines.join(' '),
-      songs: songLines,
+    const sections = {
+      message: '',
+      activities: [] as string[],
+      songs: [] as string[],
     };
+
+    // Split by section headers
+    const messagePart = text.match(/MESSAGE:(.*?)(?=ACTIVITIES:|$)/s);
+    const activitiesPart = text.match(/ACTIVITIES:(.*?)(?=SONGS:|$)/s);
+    const songsPart = text.match(/SONGS:(.*?)$/s);
+
+    if (messagePart) {
+      sections.message = messagePart[1].trim();
+    }
+
+    if (activitiesPart) {
+      const activityText = activitiesPart[1].trim();
+      // Split by numbered list items or bullet points
+      const activityMatches = activityText.split(/\n(?=\d+\.|\*|-)/);
+      sections.activities = activityMatches
+        .map(a => a.trim())
+        .filter(a => a.length > 0);
+    }
+
+    if (songsPart) {
+      const songText = songsPart[1].trim();
+      const songMatches = songText.split('\n');
+      sections.songs = songMatches
+        .map(s => s.replace(/^[-*]\s*/, '').trim())
+        .filter(s => s.length > 0);
+    }
+
+    return sections;
   };
 
   const parsed = parseInsight(insight);
@@ -59,19 +63,41 @@ const AIInsightCard = ({ insight, mood }: AIInsightCardProps) => {
         </CardContent>
       </Card>
 
-      {/* Calming Activity */}
-      {parsed.activity && (
+      {/* Calming Activities */}
+      {parsed.activities.length > 0 && (
         <Card className="glass-effect border-accent/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-accent">
               <Sparkles className="w-5 h-5" />
-              Suggested Activity
+              Calming Activities for You
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-foreground/90 leading-relaxed">
-              {parsed.activity}
-            </p>
+            <div className="space-y-4">
+              {parsed.activities.map((activity, index) => {
+                // Parse activity to separate title from description
+                const parts = activity.match(/^(\d+\.\s*\*\*)?(.+?)(\*\*)?:?\s*(.*)$/s);
+                const title = parts ? (parts[2] || activity.split(':')[0]).replace(/\*\*/g, '').trim() : `Activity ${index + 1}`;
+                const description = parts ? parts[4].trim() : activity;
+                
+                return (
+                  <div
+                    key={index}
+                    className="p-4 rounded-lg bg-accent/5 border border-accent/20 hover:border-accent/40 transition-all duration-300"
+                  >
+                    <h4 className="font-semibold text-accent mb-2 flex items-center gap-2">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/20 text-accent text-sm">
+                        {index + 1}
+                      </span>
+                      {title}
+                    </h4>
+                    <p className="text-foreground/80 text-sm leading-relaxed ml-8">
+                      {description || activity}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
       )}
