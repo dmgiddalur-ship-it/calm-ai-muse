@@ -1,1 +1,4 @@
 project_id = "iqyunulsvbilgucsmxlc"
+
+[functions.mood-insights]
+verify_jwt = true
